@@ -1,0 +1,30 @@
+# i will take the base image only for the required task (119MB)
+# Stage 1 (builder)
+FROM python:3.14-slim AS builder
+
+WORKDIR /app
+
+COPY requirements.txt .
+
+RUN pip install -r requirements.txt --target /app/libraries
+
+# python 3.14 ka kaam idhar khatm hua, kyonki python se jo chahiye o /app/libraries me rakha hai
+
+COPY . .
+
+# I will take another base image with even lesser size (minimal)
+# Stage 2 (deployer)
+FROM gcr.io/distroless/python3-debian12 AS deployer
+
+WORKDIR /app
+
+COPY --from=builder /app/libraries /app/libraries
+
+COPY --from=builder /app .
+
+EXPOSE 80
+
+ENV PYTHONPATH="/app/libraries"
+
+CMD ["run.py"]
+
